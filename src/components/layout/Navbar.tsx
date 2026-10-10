@@ -3,8 +3,10 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X, FileText } from "lucide-react";
+import { Volume2, VolumeX } from "@/components/ui/icons";
 import { navItems, personalInfo } from "@/data/portfolio";
 import { useScrollSpy } from "@/hooks/useScrollSpy";
+import { useSound } from "@/context/SoundContext";
 
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
@@ -13,6 +15,7 @@ export function Navbar() {
     navItems.map((item) => item.href.replace("#", "")),
     80
   );
+  const { muted, toggleMute, play } = useSound();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -79,7 +82,10 @@ export function Navbar() {
                 return (
                   <button
                     key={item.href}
-                    onClick={() => handleNavClick(item.href)}
+                    onClick={() => {
+                      play('click');
+                      handleNavClick(item.href);
+                    }}
                     className={`px-3 py-1.5 text-sm rounded-md transition-colors duration-200 ${
                       isActive
                         ? "text-accent bg-accent-subtle"
@@ -95,15 +101,30 @@ export function Navbar() {
                 download
                 className="ml-2 inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md bg-accent text-white hover:bg-accent-hover transition-colors"
                 aria-label="Download resume"
+                onClick={() => play('confirm')}
               >
                 <FileText size={14} />
                 Resume
               </a>
+              <button
+                onClick={() => {
+                  play('tick');
+                  toggleMute();
+                }}
+                className="ml-2 p-2 text-text-secondary hover:text-text-primary transition-colors"
+                aria-label={muted ? "Enable sounds" : "Disable sounds"}
+                aria-pressed={!muted}
+              >
+                {muted ? <VolumeX size={18} /> : <Volume2 size={18} />}
+              </button>
             </div>
 
             {/* Mobile Menu Button */}
             <button
-              onClick={() => setIsOpen(!isOpen)}
+              onClick={() => {
+                play('click');
+                setIsOpen(!isOpen);
+              }}
               className="md:hidden p-2 text-text-secondary hover:text-text-primary transition-colors"
               aria-label={isOpen ? "Close menu" : "Open menu"}
               aria-expanded={isOpen}
@@ -157,7 +178,10 @@ export function Navbar() {
                   return (
                     <button
                       key={item.href}
-                      onClick={() => handleNavClick(item.href)}
+                      onClick={() => {
+                        play('click');
+                        handleNavClick(item.href);
+                      }}
                       className={`block w-full text-left px-3 py-2.5 text-sm rounded-md transition-colors ${
                         isActive
                           ? "text-accent bg-accent-subtle"
@@ -170,16 +194,29 @@ export function Navbar() {
                 })}
               </div>
 
-              <div className="p-4 border-t border-border">
+              <div className="p-4 border-t border-border space-y-3">
                 <a
                   href={personalInfo.resumePath}
                   download
                   className="flex items-center justify-center gap-2 w-full px-4 py-2.5 text-sm font-medium rounded-md bg-accent text-white hover:bg-accent-hover transition-colors"
                   aria-label="Download resume"
+                  onClick={() => play('confirm')}
                 >
                   <FileText size={14} />
                   Download Resume
                 </a>
+                <button
+                  onClick={() => {
+                    play('tick');
+                    toggleMute();
+                  }}
+                  className="flex items-center justify-center gap-2 w-full px-4 py-2.5 text-sm font-medium rounded-md bg-surface border border-border text-text-primary hover:bg-surface-hover hover:border-accent/30 transition-colors"
+                  aria-label={muted ? "Enable sounds" : "Disable sounds"}
+                  aria-pressed={!muted}
+                >
+                  {muted ? <VolumeX size={18} /> : <Volume2 size={18} />}
+                  <span>{muted ? "Enable Sounds" : "Disable Sounds"}</span>
+                </button>
               </div>
             </motion.div>
           </>

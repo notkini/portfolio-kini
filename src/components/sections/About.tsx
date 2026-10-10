@@ -2,6 +2,8 @@
 
 import { motion } from "framer-motion";
 import { SectionHeading } from "@/components/ui/SectionHeading";
+import { Deck } from "@/components/ui/Deck";
+import { EducationCard } from "@/components/ui/EducationCard";
 import { aboutText, education } from "@/data/portfolio";
 
 export function About() {
@@ -43,36 +45,11 @@ export function About() {
             <h3 className="text-sm font-medium text-text-muted uppercase tracking-wider mb-4">
               Education
             </h3>
-            <div className="space-y-4">
+            <Deck direction="vertical" fanSpread={80} fanAngle={3} className="min-h-[240px]">
               {education.map((edu, i) => (
-                <div
-                  key={i}
-                  className="p-4 rounded-lg bg-surface border border-border"
-                >
-                  <p className="text-sm font-medium text-text-primary">
-                    {edu.degree}
-                  </p>
-                  <p className="text-xs text-text-secondary mt-1">
-                    {edu.institution}
-                  </p>
-                  <div className="flex items-center gap-2 mt-2">
-                    <span className="text-xs font-medium text-accent">
-                      {edu.score}
-                    </span>
-                    {edu.period && (
-                      <span className="text-xs text-text-muted">
-                        · {edu.period}
-                      </span>
-                    )}
-                  </div>
-                  {edu.focus && (
-                    <p className="text-xs text-text-muted mt-2">
-                      Focus: {edu.focus}
-                    </p>
-                  )}
-                </div>
+                <EducationCard key={i} education={edu} />
               ))}
-            </div>
+            </Deck>
           </motion.div>
         </div>
       </div>

@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { ArrowDown, FileText, Mail } from "lucide-react";
 import { Github, Linkedin } from "@/components/ui/icons";
 import { personalInfo, socialLinks, interests } from "@/data/portfolio";
+import { Button } from "@/components/ui/Button";
 
 
 export function Hero() {
@@ -92,36 +93,42 @@ export function Hero() {
           variants={itemVariants}
           className="flex flex-wrap items-center gap-3 mt-8"
         >
-          <a
-            href="#projects"
+          <Button
+            variant="primary"
+            size="md"
             onClick={(e) => {
               e.preventDefault();
               document.querySelector("#projects")?.scrollIntoView({ behavior: "smooth" });
             }}
-            className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium rounded-lg bg-accent text-white hover:bg-accent-hover active:scale-[0.98] transition-all"
+            ariaLabel="Explore projects"
+            sound="click"
           >
             Explore Projects
             <ArrowDown size={14} />
-          </a>
-          <a
-            href="#contact"
+          </Button>
+          <Button
+            variant="secondary"
+            size="md"
             onClick={(e) => {
               e.preventDefault();
               document.querySelector("#contact")?.scrollIntoView({ behavior: "smooth" });
             }}
-            className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium rounded-lg bg-surface border border-border text-text-primary hover:bg-surface-hover hover:border-accent/30 active:scale-[0.98] transition-all"
+            ariaLabel="Get in touch"
+            sound="click"
           >
             Get in Touch
-          </a>
-          <a
+          </Button>
+          <Button
+            variant="ghost"
+            size="md"
             href={personalInfo.resumePath}
             download
-            className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium rounded-lg text-text-secondary hover:text-text-primary hover:bg-surface active:scale-[0.98] transition-all"
-            aria-label="Download resume"
+            ariaLabel="Download resume"
+            sound="confirm"
           >
             <FileText size={14} />
             Resume
-          </a>
+          </Button>
         </motion.div>
 
         {/* Social Links */}

@@ -1,7 +1,8 @@
 "use client";
 
 import { SectionHeading } from "@/components/ui/SectionHeading";
-import { ProjectCard } from "@/components/ui/ProjectCard";
+import { Deck } from "@/components/ui/Deck";
+import { ProjectCardContent } from "@/components/ui/ProjectCardContent";
 import { projects } from "@/data/portfolio";
 
 export function Projects() {
@@ -13,11 +14,11 @@ export function Projects() {
           subtitle="Selected work across AI, backend, and embedded systems"
         />
 
-        <div className="grid md:grid-cols-2 gap-5 md:gap-6">
+        <Deck direction="horizontal" fanSpread={140} fanAngle={10} className="min-h-[320px]">
           {projects.map((project) => (
-            <ProjectCard key={project.id} project={project} />
+            <ProjectCardContent key={project.id} project={project} />
           ))}
-        </div>
+        </Deck>
       </div>
     </section>
   );

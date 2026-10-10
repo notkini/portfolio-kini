@@ -1,7 +1,8 @@
 "use client";
 
 import { SectionHeading } from "@/components/ui/SectionHeading";
-import { ExperienceCard } from "@/components/ui/ExperienceCard";
+import { Deck } from "@/components/ui/Deck";
+import { ExperienceCardContent } from "@/components/ui/ExperienceCardContent";
 import { experiences } from "@/data/portfolio";
 
 export function Experience() {
@@ -13,11 +14,11 @@ export function Experience() {
           subtitle="Professional work & internships"
         />
 
-        <div className="max-w-3xl space-y-10">
-          {experiences.map((exp, i) => (
-            <ExperienceCard key={exp.id} experience={exp} index={i} />
+        <Deck direction="vertical" fanSpread={100} fanAngle={3} className="max-w-3xl">
+          {experiences.map((exp) => (
+            <ExperienceCardContent key={exp.id} experience={exp} />
           ))}
-        </div>
+        </Deck>
       </div>
     </section>
   );

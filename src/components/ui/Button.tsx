@@ -1,5 +1,8 @@
+"use client";
+
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { useSound } from "@/context/SoundContext";
 
 interface ButtonProps {
   children: React.ReactNode;
@@ -9,8 +12,9 @@ interface ButtonProps {
   external?: boolean;
   download?: boolean;
   className?: string;
-  onClick?: () => void;
+  onClick?: (e: React.MouseEvent<HTMLButtonElement | HTMLAnchorElement>) => void;
   ariaLabel?: string;
+  sound?: "click" | "card-flick" | "tick" | "confirm";
 }
 
 export function Button({
@@ -23,7 +27,9 @@ export function Button({
   className,
   onClick,
   ariaLabel,
+  sound = "click",
 }: ButtonProps) {
+  const { play } = useSound();
   const baseStyles =
     "inline-flex items-center justify-center gap-2 font-medium rounded-lg transition-all duration-200 focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2";
 
@@ -44,6 +50,11 @@ export function Button({
 
   const classes = cn(baseStyles, variants[variant], sizes[size], className);
 
+  const handleClick = (e: React.MouseEvent<HTMLButtonElement | HTMLAnchorElement>) => {
+    play(sound);
+    onClick?.(e);
+  };
+
   if (href) {
     const linkProps = external
       ? { target: "_blank", rel: "noopener noreferrer" }
@@ -56,6 +67,7 @@ export function Button({
           className={classes}
           aria-label={ariaLabel}
           download={download || undefined}
+          onClick={handleClick}
           {...linkProps}
         >
           {children}
@@ -64,7 +76,7 @@ export function Button({
     }
 
     return (
-      <Link href={href} className={classes} aria-label={ariaLabel}>
+      <Link href={href} className={classes} aria-label={ariaLabel} onClick={handleClick}>
         {children}
       </Link>
     );
@@ -72,7 +84,7 @@ export function Button({
 
   return (
     <button
-      onClick={onClick}
+      onClick={handleClick}
       className={classes}
       aria-label={ariaLabel}
       type="button"
