@@ -90,7 +90,6 @@ export function Navbar() {
                   </button>
                 );
               })}
-              {/* 
               <a
                 href={personalInfo.resumePath}
                 download
@@ -100,7 +99,6 @@ export function Navbar() {
                 <FileText size={14} />
                 Resume
               </a>
-              */}
             </div>
 
             {/* Mobile Menu Button */}
@@ -126,7 +124,7 @@ export function Navbar() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
-              className="fixed inset-0 z-40 bg-black/60 md:hidden"
+              className="fixed inset-0 z-40 bg-white/80 backdrop-blur-sm md:hidden"
               onClick={() => setIsOpen(false)}
             />
 
@@ -172,7 +170,6 @@ export function Navbar() {
                 })}
               </div>
 
-              {/*
               <div className="p-4 border-t border-border">
                 <a
                   href={personalInfo.resumePath}
@@ -184,7 +181,6 @@ export function Navbar() {
                   Download Resume
                 </a>
               </div>
-              */}
             </motion.div>
           </>
         )}

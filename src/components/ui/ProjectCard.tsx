@@ -12,91 +12,6 @@ const categoryIcons = {
   automation: Cog,
 };
 
-function ProjectIllustration({
-  category,
-  accentColor,
-}: {
-  category: Project["category"];
-  accentColor: string;
-}) {
-  return (
-    <div className="relative w-full aspect-[16/9] bg-background rounded-t-lg overflow-hidden">
-      {/* Grid pattern */}
-      <svg
-        className="absolute inset-0 w-full h-full opacity-[0.03]"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        <defs>
-          <pattern
-            id={`grid-${category}`}
-            width="24"
-            height="24"
-            patternUnits="userSpaceOnUse"
-          >
-            <path
-              d="M 24 0 L 0 0 0 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="0.5"
-            />
-          </pattern>
-        </defs>
-        <rect width="100%" height="100%" fill={`url(#grid-${category})`} />
-      </svg>
-
-      {/* Accent glow */}
-      <div
-        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 rounded-full blur-3xl opacity-10"
-        style={{ backgroundColor: accentColor }}
-      />
-
-      {/* Circuit lines */}
-      <svg
-        className="absolute inset-0 w-full h-full opacity-[0.06]"
-        viewBox="0 0 400 225"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        <path
-          d="M 50 112 L 150 112 L 170 80 L 250 80 L 270 112 L 350 112"
-          fill="none"
-          stroke={accentColor}
-          strokeWidth="1"
-        />
-        <path
-          d="M 100 60 L 100 160"
-          fill="none"
-          stroke={accentColor}
-          strokeWidth="0.5"
-        />
-        <path
-          d="M 300 50 L 300 170"
-          fill="none"
-          stroke={accentColor}
-          strokeWidth="0.5"
-        />
-        <circle cx="150" cy="112" r="3" fill={accentColor} opacity="0.4" />
-        <circle cx="250" cy="80" r="3" fill={accentColor} opacity="0.4" />
-        <circle cx="200" cy="140" r="2" fill={accentColor} opacity="0.3" />
-      </svg>
-
-      {/* Category icon */}
-      <div className="absolute inset-0 flex items-center justify-center">
-        <div
-          className="p-4 rounded-xl border opacity-20"
-          style={{
-            borderColor: accentColor,
-            backgroundColor: `${accentColor}10`,
-          }}
-        >
-          {(() => {
-            const Icon = categoryIcons[category];
-            return <Icon size={32} style={{ color: accentColor }} />;
-          })()}
-        </div>
-      </div>
-    </div>
-  );
-}
 
 export function ProjectCard({ project }: { project: Project }) {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -109,10 +24,6 @@ export function ProjectCard({ project }: { project: Project }) {
       transition={{ duration: 0.5, ease: "easeOut" }}
       className="group rounded-lg border border-border bg-surface overflow-hidden hover:border-accent/20 transition-colors duration-300"
     >
-      <ProjectIllustration
-        category={project.category}
-        accentColor={project.accentColor}
-      />
 
       <div className="p-5 md:p-6">
         <div className="flex items-start justify-between gap-3 mb-1">

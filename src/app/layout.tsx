@@ -30,7 +30,7 @@ export const metadata: Metadata = {
     siteName: "Aditya Kinikar",
   },
   other: {
-    "theme-color": "#0a0a0f",
+    "theme-color": "#ffffff",
   },
 };
 
