@@ -14,7 +14,7 @@ export function Leadership() {
           subtitle="Roles, workshops, and community contributions"
         />
 
-        <Deck direction="horizontal" fanSpread={160} fanAngle={8} className="max-w-4xl min-h-[280px]">
+        <Deck direction="horizontal" fanSpread={160} fanAngle={8} cardHeight={260} className="max-w-4xl min-h-[280px]">
           {leadershipRoles.map((role, i) => (
             <LeadershipCard key={role.id} role={role} index={i} />
           ))}

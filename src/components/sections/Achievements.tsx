@@ -14,7 +14,7 @@ export function Achievements() {
           subtitle="Competitions and recognition"
         />
 
-        <Deck direction="horizontal" fanSpread={140} fanAngle={8} className="max-w-3xl min-h-[200px]">
+        <Deck direction="horizontal" fanSpread={140} fanAngle={8} cardHeight={190} className="max-w-3xl min-h-[200px]">
           {achievements.map((achievement, i) => (
             <AchievementCard key={achievement.id} achievement={achievement} index={i} />
           ))}

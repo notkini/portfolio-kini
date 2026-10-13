@@ -54,7 +54,7 @@ export function Contact() {
             discuss an opportunity or just say hello, feel free to reach out.
           </motion.p>
 
-          <Deck direction="vertical" fanSpread={80} fanAngle={3} className="min-h-[200px]">
+          <Deck direction="vertical" fanSpread={80} fanAngle={3} cardHeight={88} className="min-h-[200px]">
             {contactMethods.map((method, i) => (
               <ContactCard key={method.label} method={method} index={i} />
             ))}

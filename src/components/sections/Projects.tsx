@@ -14,7 +14,7 @@ export function Projects() {
           subtitle="Selected work across AI, backend, and embedded systems"
         />
 
-        <Deck direction="horizontal" fanSpread={140} fanAngle={10} className="min-h-[320px]">
+        <Deck direction="horizontal" fanSpread={140} fanAngle={10} cardHeight={280} className="min-h-[320px]">
           {projects.map((project) => (
             <ProjectCardContent key={project.id} project={project} />
           ))}

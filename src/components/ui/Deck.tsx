@@ -1,16 +1,10 @@
 "use client";
 
-import React, { useState, useRef, useEffect, useCallback, KeyboardEvent, ReactNode, CSSProperties } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { useReducedMotion } from "framer-motion";
-import { useSound } from "@/context/SoundContext";
+import React, { ReactNode, useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { createPortal } from "react-dom";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-interface DeckCardItem {
-  id: string;
-  content: ReactNode;
-  index: number;
-}
 
 interface DeckProps {
   children: ReactNode;
@@ -19,11 +13,9 @@ interface DeckProps {
   fanAngle?: number;
   fanSpread?: number;
   onCardSelect?: (index: number) => void;
+  layout?: "fan" | "list";
+  cardHeight?: number;
 }
-
-const MAX_STACK_DEPTH = 5;
-const STACK_OFFSET = 8;
-const STACK_ROTATION = 2;
 
 export function Deck({
   children,
@@ -32,273 +24,177 @@ export function Deck({
   fanAngle = 8,
   fanSpread = 120,
   onCardSelect,
+  layout = "fan",
+  cardHeight = 260,
 }: DeckProps) {
-  const { play } = useSound();
   const shouldReduceMotion = useReducedMotion();
+  const cards = useMemo(() => React.Children.toArray(children), [children]);
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [isFanned, setIsFanned] = useState(false);
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
-  const [drawnIndex, setDrawnIndex] = useState<number | null>(null);
-  const [isTouchDevice, setIsTouchDevice] = useState(false);
-  const fanOutPlayedRef = useRef(false);
+  const mounted = useSyncExternalStore(() => () => {}, () => true, () => false);
   const deckRef = useRef<HTMLDivElement>(null);
-  const cardsRef = useRef<(HTMLDivElement | null)[]>([]);
+  const lastFocusRef = useRef<HTMLElement | null>(null);
+
+  const close = useCallback(() => setSelectedIndex(null), []);
 
   useEffect(() => {
-    const checkTouch = () => {
-      setIsTouchDevice("ontouchstart" in window || navigator.maxTouchPoints > 0);
+    if (selectedIndex === null) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        close();
+      }
+      if (event.key === "ArrowRight") setSelectedIndex((current) => current === null ? null : (current + 1) % cards.length);
+      if (event.key === "ArrowLeft") setSelectedIndex((current) => current === null ? null : (current - 1 + cards.length) % cards.length);
     };
-    checkTouch();
-    window.addEventListener("resize", checkTouch);
-    return () => window.removeEventListener("resize", checkTouch);
-  }, []);
+    window.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", closeOnEscape);
+      requestAnimationFrame(() => lastFocusRef.current?.focus());
+    };
+  }, [selectedIndex, close, cards.length]);
 
-  const childArray = Array.isArray(children) ? children : [children];
-  const cards: DeckCardItem[] = childArray
-    .filter((child): child is React.ReactElement => React.isValidElement(child))
-    .map((child, index) => ({
-      id: child.key as string || `card-${index}`,
-      content: child,
-      index,
-    }));
-
-  const totalCards = cards.length;
-  const visibleDepth = Math.min(totalCards, MAX_STACK_DEPTH);
-
-  const handleFanOut = useCallback(() => {
-    if (!isFanned) {
-      setIsFanned(true);
-      if (!fanOutPlayedRef.current && !shouldReduceMotion) {
-        play("shuffle");
-        fanOutPlayedRef.current = true;
-      }
-    }
-  }, [isFanned, play, shouldReduceMotion]);
-
-  const handleFanIn = useCallback(() => {
-    if (isFanned && !isTouchDevice) {
-      setIsFanned(false);
-      setHoveredIndex(null);
-      fanOutPlayedRef.current = false;
-    }
-  }, [isFanned, isTouchDevice]);
-
-  const handleCardHover = useCallback((index: number) => {
-    if (isFanned) {
-      setHoveredIndex(index);
-      if (!shouldReduceMotion) {
-        play("tick");
-      }
-    }
-  }, [isFanned, play, shouldReduceMotion]);
-
-  const handleCardLeave = useCallback(() => {
-    setHoveredIndex(null);
-  }, []);
-
-  const handleCardClick = useCallback((index: number) => {
-    setDrawnIndex(index);
-    play("card-flick");
+  const selectCard = (index: number, event: React.MouseEvent<HTMLDivElement>) => {
+    const target = event.target as HTMLElement;
+    const link = target.closest("a");
+    if (link) event.preventDefault();
+    else if (target.closest("button, input, select, textarea, [data-card-interactive]")) return;
+    lastFocusRef.current = event.currentTarget;
+    setSelectedIndex(index);
     onCardSelect?.(index);
-    setTimeout(() => setDrawnIndex(null), 600);
-  }, [play, onCardSelect]);
+  };
 
-  const handleKeyDown = useCallback((e: KeyboardEvent<HTMLDivElement>) => {
-    if (!isFanned) {
-      if (e.key === "Enter" || e.key === " " || e.key === "ArrowRight" || e.key === "ArrowDown") {
-        e.preventDefault();
-        handleFanOut();
-      }
-      return;
+  const keySelect = (event: React.KeyboardEvent<HTMLDivElement>, index: number) => {
+    if ((event.target as HTMLElement).closest("a, button, input, select, textarea, [data-card-interactive]")) return;
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      lastFocusRef.current = event.currentTarget;
+      setSelectedIndex(index);
+      onCardSelect?.(index);
     }
-
-    const currentFocus = hoveredIndex ?? 0;
-    let newFocus = currentFocus;
-
-    switch (e.key) {
-      case "ArrowRight":
-      case "ArrowDown":
-        e.preventDefault();
-        newFocus = (currentFocus + 1) % totalCards;
-        break;
-      case "ArrowLeft":
-      case "ArrowUp":
-        e.preventDefault();
-        newFocus = (currentFocus - 1 + totalCards) % totalCards;
-        break;
-      case "Enter":
-      case " ":
-        e.preventDefault();
-        handleCardClick(currentFocus);
-        return;
-      case "Escape":
-        e.preventDefault();
-        handleFanIn();
-        return;
-      case "Tab":
-        if (e.shiftKey) {
-          e.preventDefault();
-          newFocus = (currentFocus - 1 + totalCards) % totalCards;
-        } else {
-          e.preventDefault();
-          newFocus = (currentFocus + 1) % totalCards;
-        }
-        break;
-      default:
-        return;
+    if (event.key === "ArrowRight" || event.key === "ArrowDown") {
+      event.preventDefault();
+      deckRef.current?.querySelector<HTMLElement>(`[data-card-index="${(index + 1) % cards.length}"]`)?.focus();
     }
-
-    setHoveredIndex(newFocus);
-    if (!shouldReduceMotion) {
-      play("tick");
+    if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
+      event.preventDefault();
+      deckRef.current?.querySelector<HTMLElement>(`[data-card-index="${(index - 1 + cards.length) % cards.length}"]`)?.focus();
     }
-  }, [isFanned, hoveredIndex, totalCards, handleFanOut, handleFanIn, handleCardClick, play, shouldReduceMotion]);
+  };
 
-  const getStackStyle = (index: number) => {
-    if (index >= visibleDepth) {
-      return { display: "none" as const };
-    }
-
-    const depth = visibleDepth - 1 - index;
-    const isDrawn = drawnIndex === index;
-    const isHovered = hoveredIndex === index && isFanned;
-
-    const baseZ = 100 - depth * 10;
-    const spread = direction === "horizontal" ? fanSpread : 0;
-    const translateY = direction === "vertical" ? fanSpread : 0;
-    const angle = direction === "horizontal"
-      ? (index - (visibleDepth - 1) / 2) * (fanAngle / Math.max(1, visibleDepth - 1))
-      : 0;
-
-    if (shouldReduceMotion) {
-      if (isDrawn) {
-        return {
-          zIndex: 200,
-          y: -16,
-          scale: 1.04,
-          rotate: 0,
-          boxShadow: "0 24px 48px -16px rgba(0,0,0,0.2)",
-          transition: { duration: 0.4, ease: "easeOut" },
-        };
-      }
-      if (isFanned) {
-        return {
-          zIndex: baseZ,
-          x: index * (spread / Math.max(1, visibleDepth - 1)),
-          y: index * (translateY / Math.max(1, visibleDepth - 1)),
-          rotate: 0,
-          scale: 1,
-        };
-      }
+  const isList = layout === "list";
+  const styleForCard = (index: number): React.CSSProperties => {
+    if (isList) return {};
+    const count = cards.length;
+    const centered = index - (count - 1) / 2;
+    const maxSpread = Math.min(fanSpread, Math.max(30, (typeof window !== "undefined" ? window.innerWidth : 900) * 0.55));
+    const spread = isFanned ? maxSpread : Math.min(26, maxSpread / Math.max(1, count - 1));
+    if (direction === "vertical") {
+      const verticalSpread = isFanned ? Math.min(76, spread * 0.55) : Math.min(18, spread * 0.14);
       return {
-        zIndex: baseZ,
-        y: depth * STACK_OFFSET,
-        rotate: depth % 2 === 0 ? -STACK_ROTATION : STACK_ROTATION,
-        scale: 1 - depth * 0.015,
+        zIndex: hoveredIndex === index ? cards.length + 2 : index + 1,
+        left: "50%",
+        top: `calc(50% + ${centered * verticalSpread}px)`,
+        marginLeft: "calc(-1 * min(41vw, 170px))",
+        marginTop: `-${cardHeight / 2}px`,
       };
     }
-
-    if (isDrawn) {
-      return {
-        zIndex: 200,
-        y: -16,
-        scale: 1.04,
-        rotate: 0,
-        boxShadow: "0 24px 48px -16px rgba(0,0,0,0.2)",
-        transition: { duration: 0.4, ease: "easeOut" },
-      };
-    }
-
-    if (isFanned) {
-      const isActiveHover = isHovered;
-      const hoverLift = isActiveHover ? -12 : 0;
-      const hoverScale = isActiveHover ? 1.03 : 1;
-      const hoverShadow = isActiveHover ? "0 20px 40px -12px rgba(0,0,0,0.18)" : undefined;
-
-      return {
-        zIndex: 100 + index,
-        x: index * (spread / Math.max(1, visibleDepth - 1)),
-        y: index * (translateY / Math.max(1, visibleDepth - 1)) + hoverLift,
-        rotate: angle,
-        scale: hoverScale,
-        boxShadow: hoverShadow,
-        transition: { duration: 0.35, ease: "easeOut", delay: index * 0.03 },
-      };
-    }
-
     return {
-      zIndex: baseZ,
-      y: depth * STACK_OFFSET,
-      rotate: depth % 2 === 0 ? -STACK_ROTATION : STACK_ROTATION,
-      scale: 1 - depth * 0.015,
-      boxShadow: depth > 0 ? "0 4px 12px -4px rgba(0,0,0,0.08)" : "none",
-      transition: { duration: 0.3, ease: "easeOut" },
+      zIndex: hoveredIndex === index ? cards.length + 2 : index + 1,
+      left: "50%",
+      top: "50%",
+      marginLeft: `calc(-1 * min(41vw, 170px) + ${centered * spread}px)`,
+      marginTop: `calc(-${cardHeight / 2}px + ${Math.abs(centered) * (isFanned ? 5 : 2)}px)`,
     };
   };
 
-  const handleTouchStart = useCallback((index: number, e: React.TouchEvent) => {
-    e.stopPropagation();
-    if (!isFanned) {
-      handleFanOut();
-    } else {
-      handleCardClick(index);
-    }
-  }, [isFanned, handleFanOut, handleCardClick]);
-
-  const handleDeckTouchStart = useCallback(() => {
-    if (!isFanned) {
-      handleFanOut();
-    }
-  }, [isFanned, handleFanOut]);
-
   return (
-    <motion.div
-      ref={deckRef}
-      className={cn("relative", className)}
-      onMouseEnter={handleFanOut}
-      onMouseLeave={handleFanIn}
-      onFocus={handleFanOut}
-      onBlur={handleFanIn}
-      onKeyDown={handleKeyDown}
-      onTouchStart={handleDeckTouchStart}
-      role="list"
-      aria-label={`Card deck with ${totalCards} cards`}
-      tabIndex={0}
-      style={{ outline: "none" }}
-    >
-      <AnimatePresence>
+    <>
+      <div
+        ref={deckRef}
+        className={cn("relative mx-auto", isList ? "space-y-5" : "deck-fan h-[300px] sm:h-[340px]", className)}
+        onMouseEnter={() => !isList && setIsFanned(true)}
+        onMouseLeave={() => !isList && setIsFanned(false)}
+        onFocusCapture={() => !isList && setIsFanned(true)}
+        onBlurCapture={(event) => {
+          if (!event.currentTarget.contains(event.relatedTarget as Node)) setIsFanned(false);
+        }}
+        onTouchStart={() => !isList && setIsFanned(true)}
+        role="list"
+      >
         {cards.map((card, index) => (
           <motion.div
-            key={card.id}
-            ref={(el) => { cardsRef.current[index] = el; }}
-            style={getStackStyle(index) as CSSProperties}
-            className="relative cursor-pointer touch-none"
-            onMouseEnter={() => handleCardHover(index)}
-            onMouseLeave={handleCardLeave}
-            onClick={() => handleCardClick(index)}
-            onTouchStart={(e) => handleTouchStart(index, e)}
+            key={(card as React.ReactElement).key ?? index}
+            data-card-index={index}
             role="listitem"
-            tabIndex={isFanned ? 0 : -1}
-            aria-label={`Card ${index + 1} of ${totalCards}`}
-            data-selected={hoveredIndex === index}
-            data-drawn={drawnIndex === index}
-            data-fanned={isFanned}
+            tabIndex={selectedIndex === null ? 0 : -1}
+            aria-label={`Open card ${index + 1} of ${cards.length}`}
+            onClick={(event) => selectCard(index, event)}
+            onMouseEnter={() => setHoveredIndex(index)}
+            onMouseLeave={() => setHoveredIndex((current) => current === index ? null : current)}
+            onFocus={() => setHoveredIndex(index)}
+            onBlur={() => setHoveredIndex((current) => current === index ? null : current)}
+            onKeyDown={(event) => keySelect(event, index)}
+            animate={isList ? {
+              y: hoveredIndex === index && !shouldReduceMotion ? -5 : 0,
+              scale: hoveredIndex === index && !shouldReduceMotion ? 1.01 : 1,
+            } : {
+              scale: hoveredIndex === index ? 1 : isFanned ? 0.99 : 0.96,
+              rotate: ((index - (cards.length - 1) / 2) / Math.max(1, (cards.length - 1) / 2)) * (isFanned ? fanAngle / 2 : Math.min(1.5, fanAngle / 6)),
+              y: shouldReduceMotion ? 0 : hoveredIndex === index ? -12 : isFanned ? -2 : 0,
+            }}
+            transition={{ duration: shouldReduceMotion ? 0 : 0.45, ease: [0.22, 1, 0.36, 1] }}
+            className={cn(
+              "cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent transition-shadow",
+              isList ? "relative w-full" : "absolute h-[var(--deck-card-height)] w-[min(82vw,340px)] overflow-hidden sm:w-[340px]",
+              selectedIndex === index && "invisible"
+            )}
+            style={{ ...styleForCard(index), "--deck-card-height": `${cardHeight}px` } as React.CSSProperties}
           >
-            {card.content}
+            <div className={cn("h-full rounded-xl bg-surface ring-1 ring-border transition-shadow duration-300", hoveredIndex === index ? "shadow-[0_22px_44px_-22px_rgba(0,0,0,.34)]" : "shadow-[0_12px_32px_-20px_rgba(0,0,0,.32)]")}>
+              {card}
+            </div>
           </motion.div>
         ))}
-      </AnimatePresence>
+      </div>
 
-      {!isFanned && totalCards > 1 && !shouldReduceMotion && (
-        <motion.div
-          className="absolute inset-0 pointer-events-none"
-          animate={{ opacity: [0, 1, 0] }}
-          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-        >
-          <div className="absolute bottom-2 left-1/2 -translate-x-1/2 text-xs text-text-muted/50">
-            Hover to fan out
-          </div>
-        </motion.div>
+      {mounted && createPortal(
+        <AnimatePresence>
+          {selectedIndex !== null && (
+            <motion.div
+              className="fixed inset-0 z-[100] flex items-center justify-center bg-black/25 p-3 backdrop-blur-[2px] sm:p-6"
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              transition={{ duration: shouldReduceMotion ? 0 : 0.2 }}
+              onMouseDown={(event) => { if (event.target === event.currentTarget) close(); }}
+              onTouchStart={(event) => { if (event.target === event.currentTarget) close(); }}
+              aria-modal="true" role="dialog" aria-label="Selected card"
+            >
+              <motion.div
+                key={selectedIndex}
+                initial={{ opacity: 0, y: shouldReduceMotion ? 0 : 16, scale: shouldReduceMotion ? 1 : 0.97 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: shouldReduceMotion ? 0 : 10, scale: shouldReduceMotion ? 1 : 0.98 }}
+                transition={{ duration: shouldReduceMotion ? 0 : 0.28, ease: [0.22, 1, 0.36, 1] }}
+                onMouseDown={(event) => event.stopPropagation()}
+                className="relative max-h-[min(88dvh,900px)] w-full max-w-[min(92vw,620px)] overflow-y-auto rounded-2xl bg-white p-5 shadow-[0_32px_100px_-28px_rgba(0,0,0,.35)] ring-1 ring-border sm:p-8"
+              >
+                <button type="button" onClick={close} aria-label="Close card" className="absolute right-3 top-3 z-10 rounded-full border border-border bg-white p-2 text-text-secondary hover:bg-surface-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent">
+                  <X size={16} />
+                </button>
+                <div className="pt-5">{cards[selectedIndex]}</div>
+                <div className="mt-6 flex justify-between border-t border-border pt-4">
+                  <button type="button" onClick={() => setSelectedIndex((selectedIndex - 1 + cards.length) % cards.length)} className="text-sm text-text-secondary hover:text-text-primary">Previous</button>
+                  <button type="button" onClick={() => setSelectedIndex((selectedIndex + 1) % cards.length)} className="text-sm text-text-secondary hover:text-text-primary">Next</button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>, document.body
       )}
-    </motion.div>
+    </>
   );
 }

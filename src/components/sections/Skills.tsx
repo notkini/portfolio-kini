@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import { SectionHeading } from "@/components/ui/SectionHeading";
+import { Deck } from "@/components/ui/Deck";
 import { SkillBadge } from "@/components/ui/SkillBadge";
 import { skillCategories } from "@/data/portfolio";
 
@@ -14,7 +15,7 @@ export function Skills() {
           subtitle="Technologies and tools I work with"
         />
 
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
+        <Deck direction="horizontal" fanSpread={80} fanAngle={6} cardHeight={250} className="max-w-5xl min-h-[300px]">
           {skillCategories.map((category, catIndex) => (
             <motion.div
               key={category.title}
@@ -26,7 +27,7 @@ export function Skills() {
                 delay: catIndex * 0.05,
                 ease: "easeOut",
               }}
-              className="p-5 rounded-lg bg-surface border border-border"
+              className="h-full rounded-xl bg-surface border border-border p-5 shadow-[0_12px_32px_-20px_rgba(0,0,0,.32)]"
             >
               <h3 className="text-sm font-medium text-text-muted uppercase tracking-wider mb-3">
                 {category.title}
@@ -42,7 +43,7 @@ export function Skills() {
               </div>
             </motion.div>
           ))}
-        </div>
+        </Deck>
       </div>
     </section>
   );
